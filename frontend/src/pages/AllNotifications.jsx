@@ -3,6 +3,8 @@ import NotificationItem from '../components/NotificationItem'
 import { CircularProgress, Typography, Select, MenuItem, FormControl, InputLabel, Stack, TextField, Button } from '@mui/material'
 import Log from '../utils/logger'
 import MOCK_NOTIFICATIONS from '../mocks/mockNotifications'
+import imgI from '../assets/i.svg'
+import imgII from '../assets/ii.svg'
 
 const API = 'http://4.224.186.213/evaluation-service/notifications'
 
@@ -93,6 +95,10 @@ export default function AllNotifications() {
 
   return (
     <div>
+      <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
+        <img src={imgI} alt="i" style={{ width: 160, height: 'auto', borderRadius: 6 }} />
+        <img src={imgII} alt="ii" style={{ width: 160, height: 'auto', borderRadius: 6 }} />
+      </div>
       <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
         <Typography variant="h5">All Notifications</Typography>
         <FormControl size="small" sx={{ minWidth: 160 }}>
