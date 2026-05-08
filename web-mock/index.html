@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Notifications - Web Mock</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--primary:#1976d2;--accent:#0f6fbf;--bg:#f4f7fb;--card:#ffffff;--muted:#6b7280}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Roboto, Arial, sans-serif;background:var(--bg);color:#0f1724}
+    .appbar{background:linear-gradient(90deg,var(--primary),var(--accent));color:#fff;padding:14px 20px;box-shadow:0 6px 18px rgba(15,111,191,.12);display:flex;justify-content:space-between;align-items:center}
+    .appbar .title{font-weight:600;font-size:18px}
+    .appbar .nav{display:flex;gap:18px;align-items:center}
+    .appbar a{color:rgba(255,255,255,.95);text-decoration:none;font-weight:500}
+    .container{max-width:980px;margin:28px auto;padding:0 18px}
+    .controls{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+    .card{background:var(--card);padding:16px;border-radius:12px;box-shadow:0 6px 18px rgba(31,41,55,.06)}
+    .list{margin-top:14px;display:flex;flex-direction:column;gap:12px}
+    .item{display:flex;gap:14px;align-items:flex-start;padding:14px;border-radius:10px;border:1px solid #eef2f6;background:linear-gradient(180deg,#fff,#fbfdff)}
+    .item .meta{min-width:160px;color:var(--muted);font-size:13px}
+    .item .body{flex:1}
+    .badge{background:#ffffff;color:var(--primary);padding:8px 12px;border-radius:20px;font-weight:600;border:1px solid rgba(25,118,210,.08)}
+    .chip{display:inline-block;border-radius:10px;padding:6px 10px;border:1px solid #e6eef8;font-size:13px;color:#144b7a;background:#f7fbff}
+    .newTag{color:#0b5cff;font-weight:700}
+    .muted{color:var(--muted)}
+    .banner{padding:10px;border-radius:8px;margin-top:12px}
+    .banner.warn{background:linear-gradient(90deg,#fff7e6,#fff4db);color:#7a4b00;border:1px solid #ffecb5}
+    .banner.error{background:#fff1f0;color:#9b1c1c;border:1px solid #fccaca}
+    .toolbar{display:flex;gap:10px;align-items:center}
+    .btn{background:var(--primary);color:#fff;border:none;padding:8px 12px;border-radius:8px;font-weight:600}
+    .btn.ghost{background:transparent;color:var(--primary);border:1px solid rgba(25,118,210,.12)}
+    .input,select{padding:8px;border-radius:8px;border:1px solid #e6eef8}
+    .small{font-size:13px}
+    @media (max-width:720px){.item{flex-direction:column}.item .meta{min-width:0}}
+  </style>
+</head>
+<body>
+  <header class="appbar">
+    <div class="title">Campus Notifications</div>
+    <nav class="nav">
+      <a href="#all" style="color:inherit;text-decoration:none;">ALL</a>
+      <a href="#priority" style="color:inherit;text-decoration:none;">PRIORITY</a>
+    </nav>
+  </header>
+
+  <main class="container">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+        <div style="display:flex;gap:14px;align-items:center">
+          <div class="badge">Campus Notifications</div>
+          <div class="small muted">Responsive preview — desktop & mobile</div>
+        </div>
+        <div class="toolbar">
+          <select id="typeSelect" class="input small">
+            <option value="">All types</option>
+            <option value="Event">Event</option>
+            <option value="Result">Result</option>
+            <option value="Placement">Placement</option>
+          </select>
+          <input id="topN" class="input small" type="number" value="5" min="1" style="width:86px" />
+          <button id="simulateFetch" class="btn">Load</button>
+          <button id="simulateFail" class="btn ghost">Show Error</button>
+          <button id="resetViewed" class="btn ghost">Reset Viewed</button>
+        </div>
+      </div>
+
+      <div id="feedback" aria-live="polite" style="margin-top:12px"></div>
+
+      <div id="list" class="list" style="margin-top:14px"></div>
+    </div>
+  </main>
+
+  <script>
+    const MOCK = [
+      {"notification_id":"n1","notification_type":"Event","title":"Workshop: React Patterns","message":"Join our React patterns workshop on May 12.","created_at":"2026-05-07T09:15:00Z"},
+      {"notification_id":"n2","notification_type":"Result","title":"Exam Results Published","message":"Your semester exam results are now available.","created_at":"2026-05-07T08:02:00Z"},
+      {"notification_id":"n3","notification_type":"Placement","title":"Placement Drive: Acme Corp","message":"Acme Corp is hiring for Software Engineers.","created_at":"2026-05-06T17:30:00Z"},
+      {"notification_id":"n4","notification_type":"Event","title":"Hackathon Reminder","message":"Hackathon starts tomorrow at 10:00 AM.","created_at":"2026-05-05T12:00:00Z"},
+      {"notification_id":"n5","notification_type":"Result","title":"Project Grade Released","message":"Your final project grade has been posted.","created_at":"2026-05-04T15:45:00Z"},
+      {"notification_id":"n6","notification_type":"Event","title":"Alumni Talk","message":"Alumni talk on career growth next week.","created_at":"2026-05-03T11:20:00Z"},
+      {"notification_id":"n7","notification_type":"Placement","title":"Interview Shortlist","message":"You are shortlisted for next-round interview.","created_at":"2026-05-02T10:05:00Z"},
+      {"notification_id":"n8","notification_type":"Result","title":"Quiz Scores","message":"Weekly quiz scores are live.","created_at":"2026-05-01T09:00:00Z"}
+    ];
+
+    const listEl = document.getElementById('list');
+    const feedbackEl = document.getElementById('feedback');
+    const typeSelect = document.getElementById('typeSelect');
+    const topNEl = document.getElementById('topN');
+
+    function formatDate(iso){
+      try{ const d=new Date(iso); return d.toLocaleString(); }catch(e){return iso}
+    }
+
+    function load(mockData){
+      feedbackEl.innerHTML='';
+      const type = typeSelect.value;
+      const topN = Math.max(1, Number(topNEl.value)||5);
+      let items = Array.from(mockData);
+      if(type) items = items.filter(i=>i.notification_type===type);
+      items = items.slice(0, topN);
+      render(items);
+    }
+
+    function render(items){
+      listEl.innerHTML='';
+      const viewed = JSON.parse(localStorage.getItem('viewedNotifications')||'[]');
+      items.forEach(item => {
+        const id = item.notification_id;
+        const isViewed = viewed.includes(id);
+        const it = document.createElement('div'); it.className='item';
+        it.innerHTML = `
+          <div class="meta"><div style="font-weight:600">${item.title}</div><div style="margin-top:6px;color:var(--muted)">${formatDate(item.created_at)}</div></div>
+          <div class="body">
+            <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px"><div class="chip">${item.notification_type}</div><div class="small ${isViewed? 'muted':'newTag'}">${isViewed? 'Viewed' : 'New'}</div></div>
+            <div style="color:#17202a">${item.message}</div>
+          </div>
+        `;
+        it.addEventListener('click',()=>{
+          markViewed(id);
+          const tag = it.querySelector('.body .small'); if(tag){ tag.classList.remove('newTag'); tag.classList.add('muted'); tag.textContent='Viewed' }
+        });
+        listEl.appendChild(it);
+      });
+      if(items.length===0){ listEl.innerHTML='<div style="color:#444;padding:12px">No notifications.</div>' }
+    }
+
+    function markViewed(id){
+      const viewed = JSON.parse(localStorage.getItem('viewedNotifications')||'[]');
+      if(!viewed.includes(id)){ viewed.push(id); localStorage.setItem('viewedNotifications', JSON.stringify(viewed)); }
+    }
+
+    document.getElementById('simulateFetch').addEventListener('click',()=> fetchAndRender());
+
+    document.getElementById('simulateFail').addEventListener('click',()=>{
+      // Simulate a network failure but still show mock data with a friendly notice
+      listEl.innerHTML='';
+      load(MOCK);
+      feedbackEl.innerHTML = `<div class="banner warn">Offline mode: showing mock notifications.</div>`;
+    });
+
+    document.getElementById('resetViewed').addEventListener('click',()=>{ localStorage.removeItem('viewedNotifications'); fetchAndRender(); });
+
+    // Attempt to fetch from real API, else fallback to mock
+    async function fetchWithTimeout(url, timeout = 5000){
+      const controller = new AbortController();
+      const id = setTimeout(()=> controller.abort(), timeout);
+      try{
+        const res = await fetch(url, { signal: controller.signal });
+        clearTimeout(id);
+        return res;
+      }catch(e){ clearTimeout(id); throw e }
+    }
+
+    async function fetchAndRender(){
+      feedbackEl.innerHTML = '';
+      listEl.innerHTML = '<div style="padding:12px;color:#666">Loading...</div>';
+      const api = 'http://4.224.186.213/evaluation-service/notifications';
+      const params = new URLSearchParams();
+      const type = typeSelect.value; if(type) params.set('notification_type', type);
+      const top = Math.max(1, Number(topNEl.value)||5); params.set('limit', String(top)); params.set('page', '1');
+      try{
+        const url = api + '?' + params.toString();
+        const res = await fetchWithTimeout(url, 5000);
+        if(!res.ok) throw new Error('API ' + res.status);
+        const data = await res.json();
+        if(Array.isArray(data) && data.length>0){ load(data); feedbackEl.innerHTML = '<div class="banner" style="background:#f1fbff;border:1px solid #d8efff;color:#064a7a">Live data loaded from API</div>' }
+        else { // empty array, fallback to mock silently
+          load(MOCK); feedbackEl.innerHTML = '<div class="banner warn">API returned no items — showing mock data</div>' }
+      }catch(err){
+        // fallback to mock data and show a friendly, non-technical notice
+        load(MOCK);
+        feedbackEl.innerHTML = `<div class="banner warn">Unable to reach API — showing mock notifications.</div>`;
+      }
+    }
+
+    // initial render
+    fetchAndRender();
+  </script>
+</body>
+</html>
